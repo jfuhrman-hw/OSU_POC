@@ -1,0 +1,3836 @@
+{
+  "name": "SemanticModel",
+  "compatibilityLevel": 1500,
+  "model": {
+    "culture": "en-US",
+    "dataSources": [
+      {
+        "name": "ClientOutcomesFromEMR",
+        "connectionString": "Provider=SQLNCLI11.1;Data Source=azw-pha-db01.database.windows.net;Persist Security Info=True;User ID=miadmin;Initial Catalog=ClientOutcomesFromEMR",
+        "impersonationMode": "impersonateAccount",
+        "account": "miadmin",
+        "annotations": [
+          {
+            "name": "ConnectionEditUISource",
+            "value": "SqlServer"
+          }
+        ]
+      }
+    ],
+    "tables": [
+      {
+        "name": "Client",
+        "columns": [
+          {
+            "name": "ClientKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "ClientKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Client Name",
+            "dataType": "string",
+            "description": "Name of the Healthwise Client",
+            "sourceColumn": "ClientName",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "Url Alias",
+            "dataType": "string",
+            "description": "Alias used in Healthwise Admin",
+            "sourceColumn": "UrlAlias",
+            "sourceProviderType": "Char"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimClient",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimClient].* FROM [dbo].[DimClient] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimClient].* FROM [dbo].[DimClient] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimClient"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Content",
+        "columns": [
+          {
+            "name": "ContentKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "ContentKey",
+            "sourceProviderType": "Integer",
+            "summarizeBy": "none"
+          },
+          {
+            "name": "Language",
+            "dataType": "string",
+            "description": "Language of the Content",
+            "sourceColumn": "Language",
+            "sourceProviderType": "WChar"
+          },
+          {
+            "name": "Third Party Source",
+            "dataType": "string",
+            "description": "Indicates if the Content is Healthwise or another provider",
+            "sourceColumn": "ThirdPartySource",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "Content Title",
+            "dataType": "string",
+            "description": "Title of the piece of Content (uses the ContentTitle_Cleaned database field)",
+            "sourceColumn": "ContentTitle_Cleaned",
+            "sortByColumn": "Content Title Sort",
+            "sourceProviderType": "WChar"
+          },
+          {
+            "name": "Content Title No Parens",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "ContentTitle_NoParens",
+            "sourceProviderType": "WChar"
+          },
+          {
+            "name": "Hwid",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "Hwid",
+            "sourceProviderType": "WChar"
+          },
+          {
+            "type": "calculated",
+            "name": "Content Title Sort",
+            "dataType": "string",
+            "isDataTypeInferred": true,
+            "isHidden": true,
+            "expression": "LEFT('Content'[Content Title No Parens],1)"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Content from last 12 months for OSU",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-0,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-0,getdate()),112),1,4),'1231'))",
+                "  and clientkey = 3",
+                "         )",
+                "  "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for OSU",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'1231'))",
+                "   and clientkey = 3",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 2 years back for OSU",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-2,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-2,getdate()),112),1,4),'1231'))",
+                "     and clientkey = 3",
+                "         )",
+                ""
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 3 years back for OSU",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-3,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-3,getdate()),112),1,4),'1231'))",
+                "     and clientkey = 3",
+                "         )",
+                ""
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 4 years back for OSU",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-4,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-4,getdate()),112),1,4),'1231'))",
+                "     and clientkey = 3",
+                "         )",
+                ""
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 5 years back for OSU",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-5,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-5,getdate()),112),1,4),'1231'))",
+                "  and clientkey = 3",
+                "         )",
+                "    "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content from last 12 months for Parkview",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-0,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-0,getdate()),112),1,4),'1231'))",
+                "  and clientkey = 2",
+                "         )",
+                "  "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for Parkview",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'1231'))",
+                "   and clientkey = 2",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 2 years back for Parkview",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-2,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-2,getdate()),112),1,4),'1231'))",
+                "     and clientkey = 2",
+                "         )",
+                ""
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 3 years back for Parkview",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-3,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-3,getdate()),112),1,4),'1231'))",
+                "     and clientkey = 2",
+                "         )",
+                ""
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 4 years back for Parkview",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-4,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-4,getdate()),112),1,4),'1231'))",
+                "     and clientkey = 2",
+                "         )",
+                ""
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 5 years back for Parkview",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-5,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-5,getdate()),112),1,4),'1231'))",
+                "  and clientkey = 2",
+                "         )",
+                "    "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content from last 12 months for Partners",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-0,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-0,getdate()),112),1,4),'1231'))",
+                "  and clientkey = 1",
+                "         )",
+                "  "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 2 years back for Partners",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-2,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-2,getdate()),112),1,4),'1231'))",
+                "     and clientkey = 1",
+                "         )",
+                ""
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 3 years back for Partners",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-3,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-3,getdate()),112),1,4),'1231'))",
+                "     and clientkey = 1",
+                "         )",
+                ""
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 4 years back for Partners",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-4,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-4,getdate()),112),1,4),'1231'))",
+                "     and clientkey = 1",
+                "         )",
+                ""
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 5 years back for Partners",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-5,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-5,getdate()),112),1,4),'1231'))",
+                "  and clientkey = 1",
+                "         )",
+                "    "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 1",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0131'))",
+                "   ",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 2",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0201')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0228'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 3",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0301')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0331'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 4",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0401')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0430'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 5",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0501')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0531'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 6",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0601')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0630'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 7",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0701')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0731'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 8",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0801')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0831'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 9",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0901')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'0930'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 10",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'1001')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'1031'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 11",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'1101')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'1130'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "Content 1 year back for month 12",
+            "source": {
+              "type": "query",
+              "query": [
+                " SELECT [dbo].[DimContent].*",
+                "  FROM [dbo].[DimContent]",
+                "  where contentkey in ",
+                "  (",
+                "  select distinct(contentkey) from dbo.FactEncounterEvent_v2",
+                "  where DateKey between  ((select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'1201')))",
+                "         and ",
+                "         (select concat(substring(convert(varchar(8),dateadd(Year,-1,getdate()),112),1,4),'1231'))",
+                "",
+                "         )",
+                "   "
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "measures": [
+          {
+            "name": "Education Given Measure",
+            "description": "Count of the unique Content pieces when it has been Distributed (using Event Type = Content Distributed)",
+            "expression": "Calculate(Counta('Client Encounter Events'[ContentKey]),'Event Type'[Event Type Name]=\"Content Distributed\")",
+            "formatString": "#,0"
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimContent].* FROM [dbo].[DimContent] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimContent"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Date",
+        "columns": [
+          {
+            "name": "DateKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "DateKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Date",
+            "dataType": "dateTime",
+            "sourceColumn": "Date",
+            "formatString": "General Date",
+            "sourceProviderType": "DBTimeStamp",
+            "displayFolder": "Day Attributes"
+          },
+          {
+            "name": "FullDate",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "FullDate",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "DayOfMonth",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "DayOfMonth",
+            "sourceProviderType": "Char",
+            "displayFolder": "Month Attributes"
+          },
+          {
+            "name": "DaySuffix",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "DaySuffix",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "DayOfWeekInMonth",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "DayOfWeekInMonth",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "DayOfWeekInYear",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "DayOfWeekInYear",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "Month",
+            "dataType": "string",
+            "sourceColumn": "Month",
+            "sourceProviderType": "Char",
+            "displayFolder": "Month Attributes"
+          },
+          {
+            "name": "Quarter",
+            "dataType": "string",
+            "sourceColumn": "Quarter",
+            "sourceProviderType": "Char",
+            "displayFolder": "Quarter Attributes"
+          },
+          {
+            "name": "Year",
+            "dataType": "string",
+            "sourceColumn": "Year",
+            "sourceProviderType": "Char",
+            "displayFolder": "Year Attributes"
+          },
+          {
+            "name": "MMYYYY",
+            "dataType": "string",
+            "sourceColumn": "MMYYYY",
+            "sourceProviderType": "Char",
+            "displayFolder": "Month Attributes"
+          },
+          {
+            "name": "Holiday",
+            "dataType": "string",
+            "sourceColumn": "Holiday",
+            "sourceProviderType": "Char",
+            "displayFolder": "Day Attributes"
+          },
+          {
+            "name": "AuditID",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "AuditID",
+            "sourceProviderType": "BigInt"
+          },
+          {
+            "name": "CreatedDate",
+            "dataType": "dateTime",
+            "isHidden": true,
+            "sourceColumn": "CreatedDate",
+            "formatString": "General Date",
+            "sourceProviderType": "DBTimeStamp"
+          },
+          {
+            "name": "CreatedByPackageID",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "CreatedByPackageID",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Day Name",
+            "dataType": "string",
+            "sourceColumn": "DayName",
+            "sourceProviderType": "Char",
+            "displayFolder": "Day Attributes"
+          },
+          {
+            "name": "Day Of Week",
+            "dataType": "string",
+            "sourceColumn": "DayOfWeek",
+            "sortByColumn": "Date",
+            "sourceProviderType": "Char",
+            "displayFolder": "Week Attributes"
+          },
+          {
+            "name": "Day Of Quarter",
+            "dataType": "string",
+            "sourceColumn": "DayOfQuarter",
+            "sourceProviderType": "Char",
+            "displayFolder": "Quarter Attributes"
+          },
+          {
+            "name": "Day Of Year",
+            "dataType": "string",
+            "sourceColumn": "DayOfYear",
+            "sortByColumn": "Date",
+            "sourceProviderType": "Char",
+            "displayFolder": "Day Attributes"
+          },
+          {
+            "name": "Week Of Month",
+            "dataType": "string",
+            "sourceColumn": "WeekOfMonth",
+            "sourceProviderType": "Char",
+            "displayFolder": "Week Attributes"
+          },
+          {
+            "name": "Week Of Quarter",
+            "dataType": "string",
+            "sourceColumn": "WeekOfQuarter",
+            "sourceProviderType": "Char",
+            "displayFolder": "Week Attributes"
+          },
+          {
+            "name": "Week Of Year",
+            "dataType": "string",
+            "sourceColumn": "WeekOfYear",
+            "sourceProviderType": "Char",
+            "displayFolder": "Week Attributes"
+          },
+          {
+            "name": "Month Name",
+            "dataType": "string",
+            "sourceColumn": "MonthName",
+            "sortByColumn": "Date",
+            "sourceProviderType": "Char",
+            "displayFolder": "Month Attributes"
+          },
+          {
+            "name": "Month Of Quarter",
+            "dataType": "string",
+            "sourceColumn": "MonthOfQuarter",
+            "sortByColumn": "Date",
+            "sourceProviderType": "Char",
+            "displayFolder": "Month Attributes"
+          },
+          {
+            "name": "Quarter Name",
+            "dataType": "string",
+            "sourceColumn": "QuarterName",
+            "sourceProviderType": "Char",
+            "displayFolder": "Quarter Attributes"
+          },
+          {
+            "name": "Year Name",
+            "dataType": "string",
+            "sourceColumn": "YearName",
+            "sourceProviderType": "Char",
+            "displayFolder": "Year Attributes"
+          },
+          {
+            "name": "Month Year",
+            "dataType": "string",
+            "sourceColumn": "MonthYear",
+            "sortByColumn": "MMYYYY",
+            "sourceProviderType": "Char",
+            "displayFolder": "Month Attributes"
+          },
+          {
+            "name": "First Day Of Month",
+            "dataType": "dateTime",
+            "sourceColumn": "FirstDayOfMonth",
+            "formatString": "General Date",
+            "sortByColumn": "Date",
+            "sourceProviderType": "DBDate",
+            "displayFolder": "Month Attributes"
+          },
+          {
+            "name": "Last Day Of Month",
+            "dataType": "dateTime",
+            "sourceColumn": "LastDayOfMonth",
+            "formatString": "General Date",
+            "sortByColumn": "Date",
+            "sourceProviderType": "DBDate",
+            "displayFolder": "Month Attributes"
+          },
+          {
+            "name": "First Day Of Quarter",
+            "dataType": "dateTime",
+            "sourceColumn": "FirstDayOfQuarter",
+            "formatString": "General Date",
+            "sourceProviderType": "DBDate",
+            "displayFolder": "Quarter Attributes"
+          },
+          {
+            "name": "Last Day Of Quarter",
+            "dataType": "dateTime",
+            "sourceColumn": "LastDayOfQuarter",
+            "formatString": "General Date",
+            "sourceProviderType": "DBDate",
+            "displayFolder": "Quarter Attributes"
+          },
+          {
+            "name": "First Day Of Year",
+            "dataType": "dateTime",
+            "sourceColumn": "FirstDayOfYear",
+            "formatString": "General Date",
+            "sourceProviderType": "DBDate",
+            "displayFolder": "Year Attributes"
+          },
+          {
+            "name": "Last Day Of Year",
+            "dataType": "dateTime",
+            "sourceColumn": "LastDayOfYear",
+            "formatString": "General Date",
+            "sourceProviderType": "DBDate",
+            "displayFolder": "Year Attributes"
+          },
+          {
+            "name": "Is Holiday",
+            "dataType": "boolean",
+            "sourceColumn": "IsHoliday",
+            "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
+            "sourceProviderType": "Boolean",
+            "displayFolder": "Day Attributes"
+          },
+          {
+            "name": "Is Weekday",
+            "dataType": "boolean",
+            "sourceColumn": "IsWeekday",
+            "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
+            "sourceProviderType": "Boolean",
+            "displayFolder": "Day Attributes"
+          },
+          {
+            "name": "Is Inferred",
+            "dataType": "boolean",
+            "sourceColumn": "IsInferred",
+            "formatString": "\"TRUE\";\"TRUE\";\"FALSE\"",
+            "sourceProviderType": "Boolean",
+            "displayFolder": "Day Attributes"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Date",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimDate].* FROM [dbo].[DimDate] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimDate].* FROM [dbo].[DimDate] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimDate"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Department",
+        "columns": [
+          {
+            "name": "DepartmentKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "DepartmentKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Department Name",
+            "dataType": "string",
+            "description": "Department Name",
+            "sourceColumn": "DepartmentName",
+            "sourceProviderType": "Char",
+            "displayFolder": "Dept Attributes"
+          },
+          {
+            "name": "Department Specialty",
+            "dataType": "string",
+            "description": "Specialty of Department",
+            "sourceColumn": "DepartmentSpecialty",
+            "sourceProviderType": "Char",
+            "displayFolder": "Dept Attributes"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Department",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimDepartment].* FROM [dbo].[DimDepartment] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimDepartment].* FROM [dbo].[DimDepartment] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimDepartment"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Diagnosis Code",
+        "columns": [
+          {
+            "name": "DiagnosisCodeKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "DiagnosisCodeKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Diagnosis Code",
+            "dataType": "string",
+            "description": "Specific Code of Diagnosis",
+            "sourceColumn": "DiagnosisCode",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "Diagnosis Code Name",
+            "dataType": "string",
+            "description": "Explicit Diagnosis Code Name",
+            "sourceColumn": "DiagnosisCodeName",
+            "sourceProviderType": "Char"
+          },
+          {
+            "type": "calculated",
+            "name": "Delivery Condition",
+            "dataType": "string",
+            "isDataTypeInferred": true,
+            "description": "DAX Expression; if the Diagnosis Code Name cotains \"without delivey\" then \"No Delivery\" is set. If Diagnosis Code Name contains \"delivery\" then this is se3t to \"Delivery\" all others set to \"Other\".",
+            "expression": [
+              " if(containsstring( 'Diagnosis Code'[Diagnosis Code Name],\"without delivery\"),\"No Delivery\",",
+              "       if(containsstring( 'Diagnosis Code'[Diagnosis Code Name],\"delivery\"),\"Delivery\",",
+              "   \"Other\"))"
+            ]
+          },
+          {
+            "type": "calculated",
+            "name": "Pre-Eclampsia Condition",
+            "dataType": "string",
+            "isDataTypeInferred": true,
+            "description": "Evaluates the Diagnosis Code, if O14.xx or O11.xx then returns Pre-Eclampsia, else Other",
+            "expression": [
+              "IF (",
+              "    CONTAINSSTRING ( 'Diagnosis Code'[Diagnosis Code], \"O14.\" ),",
+              "    \"Pre-Eclampsia\",",
+              "    IF (",
+              "        CONTAINSSTRING ( 'Diagnosis Code'[Diagnosis Code], \"O11.\" ),",
+              "        \"Pre-Eclampsia\",",
+              "        \"Other\"",
+              "    )",
+              ")"
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "CodeKey 1-10000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 1 and 10000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 10001-20000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 10001 and 20000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 20001-30000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 20001 and 30000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 30001-40000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 30001 and 40000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 40001-50000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 40001 and 50000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 60001-70000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 60001 and 70000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 70001-80000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 70001 and 80000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 80001-90000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 80001 and 90000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 90001-100000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 90001 and 100000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 100001-110000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 100001 and 110000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          },
+          {
+            "name": "CodeKey 110001-120000",
+            "source": {
+              "type": "query",
+              "query": [
+                "    SELECT [dbo].[DimDiagnosisCode].*",
+                "  FROM [dbo].[DimDiagnosisCode]",
+                "  where DiagnosisCodeKey between 110001 and 120000"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimDiagnosisCode].* FROM [dbo].[DimDiagnosisCode] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimDiagnosisCode"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Encounter Type",
+        "columns": [
+          {
+            "name": "EncounterTypeKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "EncounterTypeKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Encounter Type Name",
+            "dataType": "string",
+            "description": "Encounter Type Name",
+            "sourceColumn": "EncounterTypeName",
+            "sourceProviderType": "Char"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Encounter Type",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimEncounterType].* FROM [dbo].[DimEncounterType] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimEncounterType].* FROM [dbo].[DimEncounterType] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimEncounterType"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Event Type",
+        "columns": [
+          {
+            "name": "EventTypeKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "EventTypeKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Event Type Name",
+            "dataType": "string",
+            "description": "Event Type",
+            "sourceColumn": "EventTypeName",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "CreatedDate",
+            "dataType": "dateTime",
+            "isHidden": true,
+            "sourceColumn": "CreatedDate",
+            "formatString": "General Date",
+            "sourceProviderType": "DBTimeStamp"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Event Type",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimEventType].* FROM [dbo].[DimEventType] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimEventType].* FROM [dbo].[DimEventType] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimEventType"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Location",
+        "columns": [
+          {
+            "name": "LocationKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "LocationKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Location Name",
+            "dataType": "string",
+            "description": "Location Name",
+            "sourceColumn": "LocationName",
+            "sourceProviderType": "Char"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Location",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimLocation].* FROM [dbo].[DimLocation] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimLocation].* FROM [dbo].[DimLocation] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimLocation"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Procedure Code",
+        "columns": [
+          {
+            "name": "ProcedureCodeKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "ProcedureCodeKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Procedure Code",
+            "dataType": "string",
+            "description": "Procedure Code",
+            "sourceColumn": "ProcedureCode",
+            "sourceProviderType": "WChar"
+          },
+          {
+            "name": "Procedure Code Name",
+            "dataType": "string",
+            "description": "Name associated to the Procedure Code",
+            "sourceColumn": "ProcedureCodeName",
+            "sourceProviderType": "WChar"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Procedure Code",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimProcedureCode].* FROM [dbo].[DimProcedureCode] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimProcedureCode].* FROM [dbo].[DimProcedureCode] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimProcedureCode"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Service Area",
+        "columns": [
+          {
+            "name": "ServiceAreaKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "ServiceAreaKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Service Area ID",
+            "dataType": "string",
+            "description": "Unique ID assocated to Service Area",
+            "sourceColumn": "ServiceAreaId",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "Service Area Name",
+            "dataType": "string",
+            "description": "Name of the Service Area",
+            "sourceColumn": "ServiceAreaName",
+            "sourceProviderType": "Char"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Service Area",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimServiceArea].* FROM [dbo].[DimServiceArea] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimServiceArea].* FROM [dbo].[DimServiceArea] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimServiceArea"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Financial Class",
+        "columns": [
+          {
+            "name": "FinancialClassKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "FinancialClassKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Financial Class Name",
+            "dataType": "string",
+            "description": "Name of the Financial Class",
+            "sourceColumn": "FinancialClassName",
+            "sourceProviderType": "Char"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimFinancialClass",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimFinancialClass].* FROM [dbo].[DimFinancialClass] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimFinancialClass].* FROM [dbo].[DimFinancialClass] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimFinancialClass"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Quality Measures",
+        "isHidden": true,
+        "columns": [
+          {
+            "name": "QualityMeasuresKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "QualityMeasuresKey",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Quality Measure ID",
+            "dataType": "int64",
+            "sourceColumn": "QualityMeasureId",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "QualityMeasuresMd5",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "QualityMeasuresMd5",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "Quality Measure Code ID",
+            "dataType": "string",
+            "sourceColumn": "QualityMeasureCodeId",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "Quality Measure Code Name",
+            "dataType": "string",
+            "sourceColumn": "QualityMeasureCodeName",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "Quality Measure Status",
+            "dataType": "string",
+            "sourceColumn": "QualityMeasureStatus",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "National Quality Forum ID",
+            "dataType": "string",
+            "sourceColumn": "NationalQualityForumId",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "National Quality Forum Link",
+            "dataType": "string",
+            "sourceColumn": "NationalQualityForumLink",
+            "sourceProviderType": "Char",
+            "dataCategory": "WebURL"
+          },
+          {
+            "name": "Quality Measure Steward",
+            "dataType": "string",
+            "sourceColumn": "QualityMeasureSteward",
+            "sourceProviderType": "Char"
+          },
+          {
+            "name": "CreatedDate",
+            "dataType": "dateTime",
+            "isHidden": true,
+            "sourceColumn": "CreatedDate",
+            "formatString": "General Date",
+            "sourceProviderType": "DBTimeStamp"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Quality Measures",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[DimQualityMeasures].* FROM [dbo].[DimQualityMeasures] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            }
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[DimQualityMeasures].* FROM [dbo].[DimQualityMeasures] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "DimQualityMeasures"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          }
+        ]
+      },
+      {
+        "name": "Assets",
+        "columns": [
+          {
+            "name": "FactAssetId",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "FactAssetId",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Asset Type",
+            "dataType": "string",
+            "description": "Type of Asset",
+            "sourceColumn": "AssetType",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Hwid",
+            "dataType": "string",
+            "description": "Healthwise ID - used to associate the Content as an Asset",
+            "sourceColumn": "Hwid",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Locale",
+            "dataType": "string",
+            "description": "Locale",
+            "sourceColumn": "Locale",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Version",
+            "dataType": "int64",
+            "description": "Version of Asset",
+            "sourceColumn": "Version",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Publication Date",
+            "dataType": "int64",
+            "description": "Date the Asset was published",
+            "sourceColumn": "PublicationDateKey",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Title",
+            "dataType": "string",
+            "description": "Title of Asset",
+            "sourceColumn": "Title",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Product",
+            "dataType": "string",
+            "description": "Healthwise Product Asset pertains to",
+            "sourceColumn": "Product",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Type",
+            "dataType": "string",
+            "description": "Type of Asset",
+            "isHidden": true,
+            "sourceColumn": "Type",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Quarterly Release",
+            "dataType": "string",
+            "description": "Quarterly Release version associated to Asset",
+            "sourceColumn": "QuarterlyRelease",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Rank",
+            "dataType": "string",
+            "description": "Rank of Asset",
+            "sourceColumn": "Rank",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Clinical Title",
+            "dataType": "string",
+            "description": "Clinical Title",
+            "sourceColumn": "ClinicalTitle",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Minimum Age",
+            "dataType": "int64",
+            "description": "Minimum Age",
+            "sourceColumn": "MinAge",
+            "formatString": "#,##0",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Measures"
+          },
+          {
+            "name": "Maximum Age",
+            "dataType": "int64",
+            "description": "Maximum Age",
+            "sourceColumn": "MaxAge",
+            "formatString": "#,##0",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Measures"
+          },
+          {
+            "name": "Asset Reference Count",
+            "dataType": "int64",
+            "description": "Other Assets references by parent Asset",
+            "sourceColumn": "AssetReferenceCount",
+            "formatString": "#,##0",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Measures"
+          },
+          {
+            "name": "Code Word Count",
+            "dataType": "int64",
+            "description": "The counte of Code Words in Asset",
+            "sourceColumn": "CodeWordCount",
+            "formatString": "#,##0",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Measures"
+          },
+          {
+            "name": "Quality Measure Count",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "QualityMeasureCount",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "CategoryCount",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "CategoryCount",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "AssetRelationCount",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "AssetRelationCount",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "SpecialtyCount",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "SpecialtyCount",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "FacetCount",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "FacetCount",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "BehaviorChangeCount",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "BehaviorChangeCount",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "CodeCount",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "CodeCount",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "CreatedDate",
+            "dataType": "dateTime",
+            "isHidden": true,
+            "sourceColumn": "CreatedDate",
+            "formatString": "General Date",
+            "sourceProviderType": "DBTimeStamp"
+          },
+          {
+            "name": "Epic Title",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "Epic_Title",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "Epic Clinical Title",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "Epic_ClinicalTitle",
+            "sourceProviderType": "WChar",
+            "displayFolder": "Asset Attributes"
+          },
+          {
+            "name": "CodesId",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "CodesId",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "CategoriesId",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "CategoriesId",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "QualityMeasuresId",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "QualityMeasuresId",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "SpecialtyId",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "SpecialtyId",
+            "sourceProviderType": "Integer"
+          },
+          {
+            "name": "Concept Count",
+            "dataType": "int64",
+            "description": "Count of Concepts associated to Asset",
+            "sourceColumn": "ConceptCount",
+            "formatString": "#,##0",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Measures"
+          },
+          {
+            "name": "Keyword Count",
+            "dataType": "int64",
+            "description": "Count of Keywords associated to Asset",
+            "sourceColumn": "KeywordCount",
+            "formatString": "#,##0",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Measures"
+          },
+          {
+            "name": "Reviewer Count",
+            "dataType": "int64",
+            "description": "Count of Reviewers",
+            "sourceColumn": "ReviewerCount",
+            "formatString": "#,##0",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Measures"
+          },
+          {
+            "name": "Image Reference Count",
+            "dataType": "int64",
+            "description": "Number of Images referenced",
+            "sourceColumn": "ImageReferenceCount",
+            "formatString": "#,##0",
+            "sourceProviderType": "Integer",
+            "displayFolder": "Asset Measures"
+          },
+          {
+            "name": "Is Current Flag",
+            "dataType": "int64",
+            "description": "Used to determine if Asset is current or depricated",
+            "sourceColumn": "isCurrent",
+            "sourceProviderType": "UnsignedTinyInt",
+            "displayFolder": "Asset Attributes"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "Assets",
+            "dataView": "full",
+            "source": {
+              "type": "query",
+              "query": " SELECT [dbo].[FactAsset_v2].[FactAssetId],[dbo].[FactAsset_v2].[AssetType],[dbo].[FactAsset_v2].[Hwid],[dbo].[FactAsset_v2].[Locale],[dbo].[FactAsset_v2].[Version],[dbo].[FactAsset_v2].[PublicationDateKey],[dbo].[FactAsset_v2].[Title],[dbo].[FactAsset_v2].[Product],[dbo].[FactAsset_v2].[Type],[dbo].[FactAsset_v2].[QuarterlyRelease],[dbo].[FactAsset_v2].[Rank],[dbo].[FactAsset_v2].[ClinicalTitle],[dbo].[FactAsset_v2].[MinAge],[dbo].[FactAsset_v2].[MaxAge],[dbo].[FactAsset_v2].[AssetReferenceCount],[dbo].[FactAsset_v2].[CodeWordCount],[dbo].[FactAsset_v2].[QualityMeasureCount],[dbo].[FactAsset_v2].[CategoryCount],[dbo].[FactAsset_v2].[AssetRelationCount],[dbo].[FactAsset_v2].[SpecialtyCount],[dbo].[FactAsset_v2].[ConceptCount],[dbo].[FactAsset_v2].[FacetCount],[dbo].[FactAsset_v2].[BehaviorChangeCount],[dbo].[FactAsset_v2].[CodeCount],[dbo].[FactAsset_v2].[KeywordCount],[dbo].[FactAsset_v2].[ReviewerCount],[dbo].[FactAsset_v2].[ImageReferenceCount],[dbo].[FactAsset_v2].[isCurrent],[dbo].[FactAsset_v2].[CreatedDate],[dbo].[FactAsset_v2].[Epic_Title],[dbo].[FactAsset_v2].[Epic_ClinicalTitle],[dbo].[FactAsset_v2].[CodesId],[dbo].[FactAsset_v2].[CategoriesId],[dbo].[FactAsset_v2].[QualityMeasuresId],[dbo].[FactAsset_v2].[SpecialtyId] FROM [dbo].[FactAsset_v2] ",
+              "dataSource": "ClientOutcomesFromEMR"
+            },
+            "annotations": [
+              {
+                "name": "TableWidgetSerialization",
+                "value": [
+                  "<?xml version=\"1.0\" encoding=\"UTF-16\"?><Gemini xmlns=\"TableWidgetSerialization\"><AnnotationContent><![CDATA[<?xml version=\"1.0\"?>",
+                  "<TableWidgetGridSerialization xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">",
+                  "  <ColumnSuggestedType />",
+                  "  <ColumnFormat />",
+                  "  <ColumnAccuracy />",
+                  "  <ColumnCurrencySymbol />",
+                  "  <ColumnPositivePattern />",
+                  "  <ColumnNegativePattern />",
+                  "  <ColumnWidths>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>FactAssetId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>88</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>AssetType</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>81</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Hwid</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>53</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Locale</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>60</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Version</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>65</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>PublicationDateKey</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>122</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Title</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>50</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Product</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>67</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Type</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>54</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>QuarterlyRelease</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>114</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Rank</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>54</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>ClinicalTitle</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>82</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>MinAge</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>65</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>MaxAge</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>69</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Text</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>52</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>AssetReferenceCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>136</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CodeWordCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>110</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>QualityMeasureCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>134</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CategoryCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>104</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>AssetRelationCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>125</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>SpecialtyCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>102</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>ConceptCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>99</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>FacetCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>86</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>BehaviorChangeCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>138</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CodeCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>84</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>KeywordCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>101</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>ReviewerCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>104</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>ImageReferenceCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>139</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>isCurrent</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>74</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CreatedDate</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>92</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Epic_Title</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>75</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Epic_ClinicalTitle</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>107</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CodesId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>70</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CategoriesId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>92</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>QualityMeasuresId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>120</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>SpecialtyId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>83</int>",
+                  "      </value>",
+                  "    </item>",
+                  "  </ColumnWidths>",
+                  "  <ColumnDisplayIndex>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>FactAssetId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>0</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>AssetType</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>1</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Hwid</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>2</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Locale</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>3</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Version</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>4</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>PublicationDateKey</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>5</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Title</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>6</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Product</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>7</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Type</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>8</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>QuarterlyRelease</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>9</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Rank</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>10</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>ClinicalTitle</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>11</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>MinAge</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>12</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>MaxAge</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>13</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Text</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>14</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>AssetReferenceCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>15</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CodeWordCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>16</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>QualityMeasureCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>17</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CategoryCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>18</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>AssetRelationCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>19</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>SpecialtyCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>20</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>ConceptCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>21</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>FacetCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>22</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>BehaviorChangeCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>23</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CodeCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>24</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>KeywordCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>25</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>ReviewerCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>26</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>ImageReferenceCount</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>27</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>isCurrent</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>28</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CreatedDate</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>29</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Epic_Title</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>30</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Epic_ClinicalTitle</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>31</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CodesId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>32</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>CategoriesId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>33</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>QualityMeasuresId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>34</int>",
+                  "      </value>",
+                  "    </item>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>SpecialtyId</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <int>35</int>",
+                  "      </value>",
+                  "    </item>",
+                  "  </ColumnDisplayIndex>",
+                  "  <ColumnFrozen />",
+                  "  <ColumnChecked>",
+                  "    <item>",
+                  "      <key>",
+                  "        <string>Text</string>",
+                  "      </key>",
+                  "      <value>",
+                  "        <boolean>false</boolean>",
+                  "      </value>",
+                  "    </item>",
+                  "  </ColumnChecked>",
+                  "  <ColumnFilter />",
+                  "  <SelectionFilter />",
+                  "  <FilterParameters />",
+                  "  <IsSortDescending>false</IsSortDescending>",
+                  "</TableWidgetGridSerialization>]]></AnnotationContent></Gemini>"
+                ]
+              }
+            ]
+          }
+        ],
+        "annotations": [
+          {
+            "name": "_TM_ExtProp_QueryDefinition",
+            "value": " SELECT [dbo].[FactAsset_v2].[FactAssetId],[dbo].[FactAsset_v2].[AssetType],[dbo].[FactAsset_v2].[Hwid],[dbo].[FactAsset_v2].[Locale],[dbo].[FactAsset_v2].[Version],[dbo].[FactAsset_v2].[PublicationDateKey],[dbo].[FactAsset_v2].[Title],[dbo].[FactAsset_v2].[Product],[dbo].[FactAsset_v2].[Type],[dbo].[FactAsset_v2].[QuarterlyRelease],[dbo].[FactAsset_v2].[Rank],[dbo].[FactAsset_v2].[ClinicalTitle],[dbo].[FactAsset_v2].[MinAge],[dbo].[FactAsset_v2].[MaxAge],[dbo].[FactAsset_v2].[AssetReferenceCount],[dbo].[FactAsset_v2].[CodeWordCount],[dbo].[FactAsset_v2].[QualityMeasureCount],[dbo].[FactAsset_v2].[CategoryCount],[dbo].[FactAsset_v2].[AssetRelationCount],[dbo].[FactAsset_v2].[SpecialtyCount],[dbo].[FactAsset_v2].[ConceptCount],[dbo].[FactAsset_v2].[FacetCount],[dbo].[FactAsset_v2].[BehaviorChangeCount],[dbo].[FactAsset_v2].[CodeCount],[dbo].[FactAsset_v2].[KeywordCount],[dbo].[FactAsset_v2].[ReviewerCount],[dbo].[FactAsset_v2].[ImageReferenceCount],[dbo].[FactAsset_v2].[isCurrent],[dbo].[FactAsset_v2].[CreatedDate],[dbo].[FactAsset_v2].[Epic_Title],[dbo].[FactAsset_v2].[Epic_ClinicalTitle],[dbo].[FactAsset_v2].[CodesId],[dbo].[FactAsset_v2].[CategoriesId],[dbo].[FactAsset_v2].[QualityMeasuresId],[dbo].[FactAsset_v2].[SpecialtyId] FROM [dbo].[FactAsset_v2] "
+          },
+          {
+            "name": "_TM_ExtProp_DbTableName",
+            "value": "FactAsset_v2"
+          },
+          {
+            "name": "_TM_ExtProp_DbSchemaName",
+            "value": "dbo"
+          },
+          {
+            "name": "TableWidgetSerialization",
+            "value": [
+              "<?xml version=\"1.0\" encoding=\"UTF-16\"?><Gemini xmlns=\"TableWidgetSerialization\"><AnnotationContent><![CDATA[<?xml version=\"1.0\"?>",
+              "<TableWidgetGridSerialization xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">",
+              "  <ColumnSuggestedType />",
+              "  <ColumnFormat />",
+              "  <ColumnAccuracy />",
+              "  <ColumnCurrencySymbol />",
+              "  <ColumnPositivePattern />",
+              "  <ColumnNegativePattern />",
+              "  <ColumnWidths>",
+              "    <item>",
+              "      <key>",
+              "        <string>FactAssetId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>88</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>AssetType</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>81</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Hwid</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>53</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Locale</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>60</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Version</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>65</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>PublicationDateKey</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>122</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Title</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>50</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Product</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>67</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Type</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>54</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>QuarterlyRelease</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>114</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Rank</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>54</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>ClinicalTitle</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>82</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>MinAge</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>65</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>MaxAge</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>69</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Text</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>52</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>AssetReferenceCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>136</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CodeWordCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>110</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>QualityMeasureCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>134</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CategoryCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>104</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>AssetRelationCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>125</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>SpecialtyCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>102</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>ConceptCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>99</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>FacetCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>86</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>BehaviorChangeCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>138</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CodeCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>84</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>KeywordCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>101</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>ReviewerCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>104</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>ImageReferenceCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>139</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>isCurrent</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>74</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CreatedDate</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>92</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Epic_Title</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>75</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Epic_ClinicalTitle</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>107</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CodesId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>70</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CategoriesId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>92</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>QualityMeasuresId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>120</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>SpecialtyId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>83</int>",
+              "      </value>",
+              "    </item>",
+              "  </ColumnWidths>",
+              "  <ColumnDisplayIndex>",
+              "    <item>",
+              "      <key>",
+              "        <string>FactAssetId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>0</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>AssetType</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>1</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Hwid</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>2</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Locale</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>3</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Version</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>4</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>PublicationDateKey</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>5</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Title</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>6</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Product</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>7</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Type</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>8</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>QuarterlyRelease</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>9</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Rank</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>10</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>ClinicalTitle</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>11</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>MinAge</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>12</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>MaxAge</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>13</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Text</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>14</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>AssetReferenceCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>15</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CodeWordCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>16</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>QualityMeasureCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>17</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CategoryCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>18</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>AssetRelationCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>19</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>SpecialtyCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>20</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>ConceptCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>21</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>FacetCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>22</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>BehaviorChangeCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>23</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CodeCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>24</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>KeywordCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>25</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>ReviewerCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>26</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>ImageReferenceCount</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>27</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>isCurrent</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>28</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CreatedDate</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>29</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Epic_Title</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>30</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>Epic_ClinicalTitle</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>31</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CodesId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>32</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>CategoriesId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>33</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>QualityMeasuresId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>34</int>",
+              "      </value>",
+              "    </item>",
+              "    <item>",
+              "      <key>",
+              "        <string>SpecialtyId</string>",
+              "      </key>",
+              "      <value>",
+              "        <int>35</int>",
+              "      </value>",
+              "    </item>",
+              "  </ColumnDisplayIndex>",
+              "  <ColumnFrozen />",
+              "  <ColumnChecked>",
+              "    <item>",
+              "      <key>",
+              "        <string>Text</string>",
+              "      </key>",
+              "      <value>",
+              "        <boolean>false</boolean>",
+              "      </value>",
+              "    </item>",
+              "  </ColumnChecked>",
+              "  <ColumnFilter />",
+              "  <SelectionFilter />",
+              "  <FilterParameters />",
+              "  <IsSortDescending>false</IsSortDescending>",
+              "</TableWidgetGridSerialization>]]></AnnotationContent></Gemini>"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Client Encounter Events",
+        "columns": [
+          {
+            "name": "DateKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "DateKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "EncounterKey",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "EncounterKey",
+            "sourceProviderType": "varchar"
+          },
+          {
+            "name": "PatientKey",
+            "dataType": "string",
+            "isHidden": true,
+            "sourceColumn": "PatientKey",
+            "sourceProviderType": "varchar"
+          },
+          {
+            "name": "ClientKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "ClientKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "EventTypeKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "EventTypeKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "EncounterTypeKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "EncounterTypeKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "ServiceAreaKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "ServiceAreaKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "LocationKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "LocationKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "DepartmentKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "DepartmentKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "FinancialClassKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "FinancialClassKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "DiagnosisCodeKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "DiagnosisCodeKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "ProcedureCodeKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "ProcedureCodeKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "ContentKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "ContentKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "Ref Doc Suggested Datetime",
+            "dataType": "dateTime",
+            "isHidden": true,
+            "sourceColumn": "REF_DOC_SUGGES_DTTM",
+            "sourceProviderType": "datetime"
+          },
+          {
+            "name": "Ref Doc Print Datetime",
+            "dataType": "dateTime",
+            "isHidden": true,
+            "sourceColumn": "REF_DOC_PRINT_DTTM",
+            "sourceProviderType": "datetime"
+          },
+          {
+            "name": "AVS_PRINT_TM",
+            "dataType": "dateTime",
+            "isHidden": true,
+            "sourceColumn": "AVS_PRINT_TM",
+            "sourceProviderType": "datetime"
+          },
+          {
+            "name": "Ref Doc - ETX Date Flag",
+            "dataType": "int64",
+            "sourceColumn": "REF_DOCS_ETX_DAT_FLAG",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "CodeOrder",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "CodeOrder",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "CreatedDate",
+            "dataType": "dateTime",
+            "isHidden": true,
+            "sourceColumn": "CreatedDate",
+            "sourceProviderType": "datetime"
+          },
+          {
+            "name": "Content Given Time",
+            "dataType": "int64",
+            "sourceColumn": "ContentGivenTime",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "Inclusion Flag",
+            "dataType": "int64",
+            "sourceColumn": "InclusionFlag",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "Acute Readmit Flag",
+            "dataType": "int64",
+            "sourceColumn": "AcuteReadmitFlag",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "Potential Planned Flag",
+            "dataType": "int64",
+            "sourceColumn": "PotentialPlannedFlag",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "VisitCategoryKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "VisitCategoryKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "ContentFlag",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "ContentFlag",
+            "sourceProviderType": "int"
+          },
+          {
+            "type": "calculated",
+            "name": "Ref Doc - Print Datetime in MDT cc",
+            "dataType": "dateTime",
+            "isDataTypeInferred": true,
+            "description": "Subtracts 6 hours from the Ref Doc Print Datetime which is in UTC",
+            "expression": "'Client Encounter Events'[Ref Doc Print Datetime] - .25"
+          },
+          {
+            "type": "calculated",
+            "name": "AVS Print Date cc",
+            "dataType": "string",
+            "isDataTypeInferred": true,
+            "description": "AVS Print Date",
+            "expression": [
+              "IF (",
+              "    LEFT ( 'Client Encounter Events'[AVS_PRINT_TM], 3 ) = \"12/\",",
+              "    LEFT ( 'Client Encounter Events'[AVS_PRINT_TM], 10 ),",
+              "    IF (",
+              "        LEFT ( 'Client Encounter Events'[AVS_PRINT_TM], 3 ) = \"11/\",",
+              "        LEFT ( 'Client Encounter Events'[AVS_PRINT_TM], 10 ),",
+              "        IF (",
+              "            LEFT ( 'Client Encounter Events'[AVS_PRINT_TM], 3 ) = \"10/\",",
+              "            LEFT ( 'Client Encounter Events'[AVS_PRINT_TM], 10 ),",
+              "            IF (",
+              "                LEFT ( 'Client Encounter Events'[AVS_PRINT_TM], 3 ) = \"12:\",",
+              "                \"12/30/1899\",",
+              "                LEFT ( 'Client Encounter Events'[AVS_PRINT_TM], 9 )",
+              "            )",
+              "        )",
+              "    )",
+              ")"
+            ],
+            "summarizeBy": "none"
+          },
+          {
+            "type": "calculated",
+            "name": "Visit Duration - Minutes cc",
+            "dataType": "int64",
+            "isDataTypeInferred": true,
+            "description": "Calculated the Visit Duration in minutes by evaluating the difference between Ref Doc Print Datetime in MDT and the AVS_PRINT_TM",
+            "expression": "datediff('Client Encounter Events'[Ref Doc - Print Datetime in MDT cc],'Client Encounter Events'[AVS_PRINT_TM],minute)",
+            "formatString": "#,##0"
+          },
+          {
+            "type": "calculated",
+            "name": "Visit Duration - Hour cc",
+            "dataType": "int64",
+            "isDataTypeInferred": true,
+            "description": "Calculated the Visit Duration in hours by evaluating the difference between Ref Doc Print Datetime in MDT and the AVS_PRINT_TM",
+            "expression": "datediff('Client Encounter Events'[Ref Doc - Print Datetime in MDT cc],'Client Encounter Events'[AVS_PRINT_TM],hour)"
+          },
+          {
+            "type": "calculated",
+            "name": "Workflow cc",
+            "dataType": "string",
+            "isDataTypeInferred": true,
+            "description": "A very rudimentary categorization of the EPIC Workflow used. Enhancements will be made in future.",
+            "expression": [
+              "if('Client Encounter Events'[AVS Print Date cc] > \"12/30/1899\" && 'Client Encounter Events'[Ref Doc - Suggested Date cc] > \"12/30/1899\" && 'Client Encounter Events'[Ref Doc - Print Date cc] = \"12/30/1899\", \"Suggested Content\", ",
+              "if('Client Encounter Events'[AVS Print Date cc] > \"12/30/1899\" && 'Client Encounter Events'[Ref Doc - Suggested Date cc] = \"12/30/1899\" && 'Client Encounter Events'[Ref Doc - Print Date cc] = \"12/30/1899\", \"Searched Content\",",
+              "if('Client Encounter Events'[AVS Print Date cc] = \"12/30/1899\" && 'Client Encounter Events'[Ref Doc - Suggested Date cc] = \"12/30/1899\" && 'Client Encounter Events'[Ref Doc - Print Date cc] > \"12/30/1899\", \"Preview Tab\",\"Other\")))"
+            ]
+          },
+          {
+            "type": "calculated",
+            "name": "Ref Doc - Suggested Date cc",
+            "dataType": "string",
+            "isDataTypeInferred": true,
+            "description": "Ref Doc Suggested Date",
+            "expression": [
+              "--LEFT('Encounter Events'[Ref Doc Suggested Datetime],10)",
+              "IF (",
+              "    LEFT ( 'Client Encounter Events'[Ref Doc Suggested Datetime], 3 ) = \"12/\",",
+              "    LEFT ( 'Client Encounter Events'[Ref Doc Suggested Datetime], 10 ),",
+              "    IF (",
+              "        LEFT ( 'Client Encounter Events'[Ref Doc Suggested Datetime], 3 ) = \"11/\",",
+              "        LEFT ( 'Client Encounter Events'[Ref Doc Suggested Datetime], 10 ),",
+              "        IF (",
+              "            LEFT ( 'Client Encounter Events'[Ref Doc Suggested Datetime], 3 ) = \"10/\",",
+              "            LEFT ( 'Client Encounter Events'[Ref Doc Suggested Datetime], 10 ),",
+              "            IF (",
+              "                LEFT ( 'Client Encounter Events'[Ref Doc Suggested Datetime], 3 ) = \"12:\",",
+              "                \"12/30/1899\",",
+              "                LEFT ( 'Client Encounter Events'[Ref Doc Suggested Datetime], 9 )",
+              "            )",
+              "        )",
+              "    )",
+              ")"
+            ]
+          },
+          {
+            "type": "calculated",
+            "name": "Ref Doc - Print Date cc",
+            "dataType": "string",
+            "isDataTypeInferred": true,
+            "expression": [
+              "--LEFT('Encounter Events'[Ref Doc Print Datetime],10)",
+              "",
+              "",
+              "IF (",
+              "    LEFT ( 'Client Encounter Events'[Ref Doc Print Datetime], 3 ) = \"12/\",",
+              "    LEFT ( 'Client Encounter Events'[Ref Doc Print Datetime], 10 ),",
+              "    IF (",
+              "        LEFT ( 'Client Encounter Events'[Ref Doc Print Datetime], 3 ) = \"11/\",",
+              "        LEFT ( 'Client Encounter Events'[Ref Doc Print Datetime], 10 ),",
+              "        IF (",
+              "            LEFT ( 'Client Encounter Events'[Ref Doc Print Datetime], 3 ) = \"10/\",",
+              "            LEFT ( 'Client Encounter Events'[Ref Doc Print Datetime], 10 ),",
+              "                  IF (",
+              "                LEFT ( 'Client Encounter Events'[Ref Doc Print Datetime], 3 ) = \"12:\",",
+              "                \"12/30/1899\",",
+              "                LEFT ( 'Client Encounter Events'[Ref Doc Print Datetime], 9 )",
+              "            )",
+              "        )",
+              "    )",
+              ")"
+            ]
+          }
+        ],
+        "partitions": [
+          {
+            "name": "vwOhio643_FactEncounterEvent_v2",
+            "source": {
+              "type": "query",
+              "query": [
+                "SELECT",
+                "\t*",
+                "FROM",
+                "\t[dbo].[vwOhio643_FactEncounterEvent_v2]"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            },
+            "annotations": [
+              {
+                "name": "TabularEditor_TableSchema",
+                "value": "{\"Name\":\"vwOhio643_FactEncounterEvent_v2\",\"Schema\":\"dbo\",\"Database\":\"ClientOutcomesFromEMR\",\"IncludedColumns\":[\"DateKey\",\"EncounterKey\",\"PatientKey\",\"ClientKey\",\"EventTypeKey\",\"EncounterTypeKey\",\"ServiceAreaKey\",\"LocationKey\",\"DepartmentKey\",\"FinancialClassKey\",\"DiagnosisCodeKey\",\"ProcedureCodeKey\",\"ContentKey\",\"REF_DOC_SUGGES_DTTM\",\"REF_DOC_PRINT_DTTM\",\"AVS_PRINT_TM\",\"REF_DOCS_ETX_DAT_FLAG\",\"CodeOrder\",\"CreatedDate\",\"ContentGivenTime\",\"InclusionFlag\",\"AcuteReadmitFlag\",\"PotentialPlannedFlag\",\"VisitCategoryKey\",\"ContentFlag\"],\"SelectAll\":true}"
+              }
+            ]
+          }
+        ],
+        "measures": [
+          {
+            "name": "Patient - Total Count Msr",
+            "description": "a distinct count of the Pateint Keys",
+            "expression": "distinctcount('Client Encounter Events'[patientkey])",
+            "formatString": "#,##0"
+          },
+          {
+            "name": "Patient - Inclusion Count Msr",
+            "description": "Distinct count of Patientkey filtered when the Inclusion flag is on",
+            "expression": "Calculate(DISTINCTCOUNT([PatientKey]),Filter('Client Encounter Events','Client Encounter Events'[Inclusion Flag] = 1))",
+            "formatString": "#,##0"
+          },
+          {
+            "name": "Patient - Acute Readmit Count Msr",
+            "description": "Distinct count of Patientkey filtered when the Acute Readmit flag is on",
+            "expression": "Calculate(DISTINCTCOUNT([PatientKey]),Filter('Client Encounter Events','Client Encounter Events'[Acute Readmit Flag] = 1))",
+            "formatString": "#,##0"
+          },
+          {
+            "name": "Patient - Inclusion Rate Msr",
+            "description": "Rate calculated using the Inclusion Patient Count (Numerator) over the Total Pateint Measure (Denominator)",
+            "expression": "Divide([Patient - Inclusion Count Msr],[Patient - Total Count Msr],0)",
+            "formatString": "0.00%;-0.00%;0.00%"
+          },
+          {
+            "name": "Patient - Acute Readmit Rate Msr",
+            "description": "Rate calculated using the Acute Readmit Pateint Count (numerator) over the Total Patient Measure (Denominator)",
+            "expression": "Divide([Patient - Acute Readmit Count Msr],[Patient - Total Count Msr],0)",
+            "formatString": "0.00%;-0.00%;0.00%"
+          },
+          {
+            "name": "Inclusions - Inclusion Msr",
+            "description": "a sum of the Inclusion flags set",
+            "expression": "sum('Client Encounter Events'[Inclusion Flag])",
+            "formatString": "#,##0"
+          },
+          {
+            "name": "Inclusions - Encounters Count Msr",
+            "description": "a distinct count of the EncounterKey if with the Inclusion Flag set",
+            "expression": "Calculate(DISTINCTCOUNT('Client Encounter Events'[EncounterKey]),Filter('Client Encounter Events','Client Encounter Events'[Inclusion Flag] = 1))",
+            "formatString": "#,##0"
+          },
+          {
+            "name": "Inclusions - Inclusion Rate",
+            "description": "Inclusion Encounters over Encounters",
+            "expression": "DIVIDE([Inclusions - Encounters Count Msr],'Client Encounter Events'[Encounters - Encounters Msr],0)",
+            "formatString": "0.00%;-0.00%;0.00%"
+          },
+          {
+            "name": "Acute Readmissions - Readmit Msr",
+            "description": "a sum of the Acute Readmission flags set",
+            "expression": "sum('Client Encounter Events'[Acute Readmit Flag])",
+            "formatString": "#,##0"
+          },
+          {
+            "name": "Acute Readmissions - Encounters Count Msr",
+            "description": "a distinct count of the EncounterKey if with the Acute Readmission Flag set",
+            "expression": " Calculate(DISTINCTCOUNT([EncounterKey]),Filter('Client Encounter Events','Client Encounter Events'[Acute Readmit Flag] = 1))"
+          },
+          {
+            "name": "Acute Readmissions - Readmission Rate",
+            "description": "Acute Readmission Encounters over Encounters",
+            "expression": "DIVIDE([Acute Readmissions - Encounters Count Msr],'Client Encounter Events'[Encounters - Encounters Msr],0)",
+            "formatString": "0.00%;-0.00%;0.00%"
+          },
+          {
+            "name": "Encounters - Encounters Msr",
+            "description": "a distinctcount of the EncounterKey",
+            "expression": "DISTINCTCOUNT ( [EncounterKey] )",
+            "formatString": "#,0"
+          },
+          {
+            "name": "Encounters - Readmission Rate Msr",
+            "description": "Rate using the Acute Readmit Patient Count (Numerator) over the Inclusion Patient Count (Denominator)",
+            "expression": "Calculate(divide([Patient - Acute Readmit Count Msr],[Patient - Inclusion Count Msr],0))",
+            "formatString": "0.00%;-0.00%;0.00%"
+          },
+          {
+            "name": "Encounters - With Education Msr",
+            "description": "This is a Filtered version of the Encounters Measure, filtered when the Event Type Name is Content Distributed",
+            "expression": "CALCULATE('Client Encounter Events'[Encounters - Encounters Msr],'Event Type'[EventTypeKey]=1)",
+            "formatString": "#,0"
+          },
+          {
+            "name": "Encounters - Education Given Rate Msr",
+            "description": "Encounters where Content was Distributed over the total number of Encounters",
+            "expression": "Divide(Calculate(DISTINCTCOUNT('Client Encounter Events'[EncounterKey]),'Event Type'[Event Type Name]=\"Content Distributed\"),DISTINCTCOUNT('Client Encounter Events'[EncounterKey]))",
+            "formatString": "0.00%;-0.00%;0.00%"
+          },
+          {
+            "name": "Acute Readmissions - Readmit to Education Given Rate Msr",
+            "description": "Rate of Acute Readmit Count Msr over Count of Content where it has been Distributed",
+            "expression": "divide([Patient - Acute Readmit Count Msr],(Calculate(Counta('Client Encounter Events'[ContentKey]),'Event Type'[Event Type Name]=\"Content Distributed\")),0)",
+            "formatString": "0.00%;-0.00%;0.00%"
+          },
+          {
+            "name": "Patient - Readmission Rate Msr",
+            "description": "Rate using the Acute Readmit Patient Count (Numerator) over the Inclusion Patient Count (Denominator)",
+            "expression": "Calculate(divide([Patient - Acute Readmit Count Msr],[Patient - Inclusion Count Msr],0))",
+            "formatString": "0.00%;-0.00%;0.00%"
+          }
+        ]
+      },
+      {
+        "name": "Visit Category",
+        "columns": [
+          {
+            "name": "VisitCategoryKey",
+            "dataType": "int64",
+            "isHidden": true,
+            "sourceColumn": "VisitCategoryKey",
+            "sourceProviderType": "int"
+          },
+          {
+            "name": "Visit Category Name",
+            "dataType": "string",
+            "sourceColumn": "VisitCategoryName",
+            "sourceProviderType": "varchar"
+          }
+        ],
+        "partitions": [
+          {
+            "name": "DimVisitCategory",
+            "source": {
+              "type": "query",
+              "query": [
+                "SELECT",
+                "\t [VisitCategoryKey]",
+                "\t,[VisitCategoryName]",
+                "FROM",
+                "\t[dbo].[DimVisitCategory]"
+              ],
+              "dataSource": "ClientOutcomesFromEMR"
+            },
+            "annotations": [
+              {
+                "name": "TabularEditor_TableSchema",
+                "value": "{\"Name\":\"DimVisitCategory\",\"Schema\":\"dbo\",\"Database\":\"ClientOutcomesFromEMR\",\"IncludedColumns\":[\"VisitCategoryKey\",\"VisitCategoryName\"],\"SelectAll\":false}"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "name": "7b7a5452-7ca2-466b-9c41-22d10ab82d1e",
+        "fromTable": "Assets",
+        "fromColumn": "QualityMeasuresId",
+        "toTable": "Quality Measures",
+        "toColumn": "Quality Measure ID"
+      },
+      {
+        "name": "ec084b2d-ed36-4557-b1c9-eea641518144",
+        "fromTable": "Content",
+        "fromColumn": "Hwid",
+        "toTable": "Assets",
+        "toColumn": "Hwid",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "4bbf72e9-6145-4295-8509-dbe072a88d4f",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "ClientKey",
+        "toTable": "Client",
+        "toColumn": "ClientKey",
+        "relyOnReferentialIntegrity": true
+      },
+      {
+        "name": "6ebad80b-f8aa-4843-896e-19e78ca70b05",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "DateKey",
+        "toTable": "Date",
+        "toColumn": "DateKey",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "79c7f6ea-c0d4-44c1-ad61-24f5dbcf4ab4",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "DepartmentKey",
+        "toTable": "Department",
+        "toColumn": "DepartmentKey",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "62ee7875-a438-40ad-b846-73c281609d40",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "DiagnosisCodeKey",
+        "toTable": "Diagnosis Code",
+        "toColumn": "DiagnosisCodeKey",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "eebc14bc-23d4-4209-8471-f4bced80db55",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "EncounterTypeKey",
+        "toTable": "Encounter Type",
+        "toColumn": "EncounterTypeKey",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "0eeeee05-8169-4901-8075-e789493954ae",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "EventTypeKey",
+        "toTable": "Event Type",
+        "toColumn": "EventTypeKey"
+      },
+      {
+        "name": "598eee1a-9bc6-4ceb-8f7f-f215e5efc6ee",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "FinancialClassKey",
+        "toTable": "Financial Class",
+        "toColumn": "FinancialClassKey"
+      },
+      {
+        "name": "c2b479df-fb44-43b0-84bd-31fddd800673",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "ProcedureCodeKey",
+        "toTable": "Procedure Code",
+        "toColumn": "ProcedureCodeKey",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "1173645f-ac4b-4388-9249-f027b4df7b43",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "ServiceAreaKey",
+        "toTable": "Service Area",
+        "toColumn": "ServiceAreaKey",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "439eafb1-261e-4525-b7ae-7b1dbed7429a",
+        "toCardinality": "many",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "ContentKey",
+        "toTable": "Content",
+        "toColumn": "ContentKey",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "cd99f51f-340e-4e10-bcd1-c364a5c36fc1",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "LocationKey",
+        "toTable": "Location",
+        "toColumn": "LocationKey",
+        "crossFilteringBehavior": "bothDirections"
+      },
+      {
+        "name": "0ede4abd-9e33-4001-a67d-bab83369e90b",
+        "fromTable": "Client Encounter Events",
+        "fromColumn": "VisitCategoryKey",
+        "toTable": "Visit Category",
+        "toColumn": "VisitCategoryKey"
+      }
+    ],
+    "roles": [
+      {
+        "name": "OSU_Read_External",
+        "description": "Role created for OSU External Client Read",
+        "modelPermission": "read",
+        "tablePermissions": [
+          {
+            "name": "Client",
+            "filterExpression": "'Client'[URL Alias] = \"ohio643\""
+          }
+        ]
+      },
+      {
+        "name": "Parkview_Read_External",
+        "description": "Role created for Parkview External Client Read",
+        "modelPermission": "read",
+        "tablePermissions": [
+          {
+            "name": "Client",
+            "filterExpression": "'Client'[URL Alias] = \"park134\""
+          }
+        ]
+      },
+      {
+        "name": "Partners_Read_External",
+        "description": "Role created for Partners External Client Read",
+        "modelPermission": "read",
+        "tablePermissions": [
+          {
+            "name": "Client",
+            "filterExpression": "'Client'[URL Alias] = \"part300\""
+          }
+        ]
+      },
+      {
+        "name": "Read_test",
+        "modelPermission": "read",
+        "members": [
+          {
+            "memberName": "ehughes@healthwise.org",
+            "memberId": "ehughes@healthwise.org#AzureAD",
+            "identityProvider": "AzureAD"
+          },
+          {
+            "memberName": "jshotwell@healthwise.org",
+            "memberId": "jshotwell@healthwise.org#AzureAD",
+            "identityProvider": "AzureAD"
+          }
+        ]
+      }
+    ],
+    "annotations": [
+      {
+        "name": "ClientCompatibilityLevel",
+        "value": "600"
+      },
+      {
+        "name": "TabularEditor_SerializeOptions",
+        "value": "{\"IgnoreInferredObjects\":true,\"IgnoreInferredProperties\":true,\"IgnoreTimestamps\":true,\"SplitMultilineStrings\":true,\"PrefixFilenames\":false,\"LocalTranslations\":false,\"LocalPerspectives\":false,\"LocalRelationships\":false,\"Levels\":[\"Data Sources\",\"Perspectives\",\"Relationships\",\"Roles\",\"Tables\",\"Tables/Calculation Items\",\"Tables/Columns\",\"Tables/Hierarchies\",\"Tables/Measures\",\"Tables/Partitions\",\"Translations\"]}"
+      }
+    ]
+  },
+  "id": "SemanticModel"
+}
